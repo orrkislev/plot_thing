@@ -10,39 +10,49 @@ async function setup() {
 }
 
 async function makeImage() {
+    growNoiseScale = random(30,200)
+    growNoiseStrength = random(10,100)
     attractors = []
     border = width / 5
     const cellSize = width / 100
+    const noiseScale = random(30,150)
     for (let x = border; x < width - border; x += cellSize) {
         for (let y = border; y < height - border; y += cellSize) {
-            if (noise(x / border * .8, y / border * .8) < 0.2) attractors.push(p(x, y))
+            if (noise(x / noiseScale, y / noiseScale) < 0.2) attractors.push(p(x, y))
         }
     }
+    print(attractors)
     // for (let i=0;i<150;i++){
     //     const y = random(100,height-100)
     //     const x = width/2 + random(-1,1) * map(y, 100, height-100, width/2, 0)
     //     attractors.push(p(x, y))
     // }
     // attractors = Array(50).fill(0).map(_ => (p(width * random(.1, .9), height * random(.1, .9))))
-    if (attractors.length < 10)
-        attractors = Array(360).fill(0).map((_, i) => p(width / 2 + cos(i) * 200, height / 2 + sin(i) * 200))
+    // if (attractors.length < 10)
+    //     attractors = Array(360).fill(0).map((_, i) => p(width / 2 + cos(i) * 200, height / 2 + sin(i) * 200))
     // attractors.push(p(0,0))
     // attractors.push(p(width,0))
     // attractors.push(p(0,height))
     // attractors.push(p(width,height))
-    attractors = attractors.map(p => ({ pos: p }))
 
+    attractors = attractors.map(p => ({ pos: p }))
     attractorTree = new HashGrid(width, height, 50)
     attractors.forEach(a => attractorTree.add(a))
 
 
     nodes = []
+    nodeTree = new HashGrid(width, height, 50)
+    nodes.forEach(n => nodeTree.add(n))
 
     listener = document.addEventListener('mousedown', e => {
-        print('click')
         const pos = p(e.clientX, e.clientY)
         document.removeEventListener('mousedown', listener)
-        nodes.push(new Node(pos))
+        const n1 = new Node(pos)
+        nodes.push(n1)
+        nodeTree.add(n1)
+        const n2 = n1.grow()
+        nodes.push(n2)
+        nodeTree.add(n2)
         start()
     })
 }
@@ -53,11 +63,6 @@ running = false
 async function start(){
     if (running) return
     running = true
-
-
-    nodeTree = new HashGrid(width, height, 50)
-    nodes.forEach(n => nodeTree.add(n))
-
 
     background(255)
 
@@ -138,7 +143,6 @@ async function start(){
                     nodeTree.add(newNode)
                     nodes.push(newNode2)
                     nodeTree.add(newNode2)
-                    print('new node')
                     break;
                 }
             }
@@ -226,7 +230,7 @@ function Node(pos, parent) {
 
         if (abs(thisAngle - dirAngle) > 180) thisAngle = 360 - thisAngle
         let newAngle = lerp(thisAngle, dirAngle, .5)
-        newAngle += (noise(this.pos.x / 230, this.pos.y / 230) - 0.5) * 100 + 25
+        newAngle += (noise(this.pos.x / growNoiseScale, this.pos.y / growNoiseScale) - 0.5) * growNoiseStrength
         // if (!dir) newAngle += 10
         this.dir = p(cos(newAngle), sin(newAngle))
         const newPos = this.pos.add(this.dir.multiply(1))
